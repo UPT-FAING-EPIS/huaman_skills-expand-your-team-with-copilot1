@@ -304,6 +304,82 @@ document.addEventListener("DOMContentLoaded", () => {
     return details.schedule;
   }
 
+  function buildActivityShareUrl(activityName) {
+    const shareUrl = new URL(window.location.href);
+    shareUrl.search = "";
+    shareUrl.hash = "";
+    shareUrl.searchParams.set("activity", activityName);
+    return shareUrl.toString();
+  }
+
+  function getShareText(activityName, details, formattedSchedule) {
+    const normalizedDescription = String(details.description || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 140);
+    const normalizedSchedule = String(formattedSchedule || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80);
+    return `Check out ${activityName} at Mergington High School: ${normalizedDescription}. Schedule: ${normalizedSchedule}`;
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    // Keep off-screen while still selectable for document.execCommand fallback.
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    // Fallback for older browsers or non-HTTPS contexts where Clipboard API is unavailable.
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textArea);
+
+    if (!copied) {
+      throw new Error(
+        "Failed to copy to clipboard. Please copy the link manually."
+      );
+    }
+  }
+
+  function shareToPlatform(platform, activityName, details, formattedSchedule) {
+    const shareUrl = buildActivityShareUrl(activityName);
+    const shareText = getShareText(activityName, details, formattedSchedule);
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(shareText);
+    let platformUrl = "";
+
+    if (platform === "x") {
+      platformUrl = `https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+    } else if (platform === "facebook") {
+      platformUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+    } else if (platform === "whatsapp") {
+      platformUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+    } else {
+      console.warn(`Unsupported share platform: ${platform}`);
+      return;
+    }
+
+    window.open(platformUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function initializeSharedActivityFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedActivity = urlParams.get("activity");
+
+    if (sharedActivity) {
+      searchQuery = sharedActivity;
+      searchInput.value = sharedActivity;
+    }
+  }
+
   // Function to determine activity type (this would ideally come from backend)
   function getActivityType(activityName, description) {
     const name = activityName.toLowerCase();
@@ -519,6 +595,24 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
+    const shareButtons = `
+      <div class="share-actions">
+        <span class="share-label">Share:</span>
+        <button class="share-button share-copy" data-activity="${name}" type="button">
+          Copy Link
+        </button>
+        <button class="share-button share-platform" data-platform="whatsapp" data-activity="${name}" type="button">
+          WhatsApp
+        </button>
+        <button class="share-button share-platform" data-platform="x" data-activity="${name}" type="button">
+          X
+        </button>
+        <button class="share-button share-platform" data-platform="facebook" data-activity="${name}" type="button">
+          Facebook
+        </button>
+      </div>
+    `;
+
     activityCard.innerHTML = `
       ${tagHtml}
       <h4>${name}</h4>
@@ -569,6 +663,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      ${shareButtons}
     `;
 
     // Add click handlers for delete buttons
@@ -586,6 +681,32 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     }
+
+    const copyLinkButton = activityCard.querySelector(".share-copy");
+    if (copyLinkButton) {
+      copyLinkButton.addEventListener("click", async () => {
+        try {
+          await copyTextToClipboard(buildActivityShareUrl(name));
+          showMessage("Share link copied!", "success");
+        } catch (error) {
+          const manualLink = buildActivityShareUrl(name);
+          showMessage(`Unable to copy link. Please copy manually: ${manualLink}`, "error");
+        }
+      });
+    }
+
+    // If no share platform buttons exist, this safely performs no action.
+    const platformShareButtons = activityCard.querySelectorAll(".share-platform");
+    platformShareButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        shareToPlatform(
+          button.dataset.platform,
+          name,
+          details,
+          formattedSchedule
+        );
+      });
+    });
 
     activitiesList.appendChild(activityCard);
   }
@@ -864,5 +985,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize app
   checkAuthentication();
   initializeFilters();
+  initializeSharedActivityFromUrl();
   fetchActivities();
 });
