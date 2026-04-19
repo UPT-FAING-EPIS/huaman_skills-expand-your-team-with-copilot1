@@ -304,6 +304,69 @@ document.addEventListener("DOMContentLoaded", () => {
     return details.schedule;
   }
 
+  function buildActivityShareUrl(activityName) {
+    const shareUrl = new URL("/static/index.html", window.location.origin);
+    shareUrl.searchParams.set("activity", activityName);
+    return shareUrl.toString();
+  }
+
+  function getShareText(activityName, details, formattedSchedule) {
+    return `Check out ${activityName} at Mergington High School: ${details.description} Schedule: ${formattedSchedule}`;
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textArea);
+
+    if (!copied) {
+      throw new Error("Copy command failed");
+    }
+  }
+
+  function shareToPlatform(platform, activityName, details, formattedSchedule) {
+    const shareUrl = buildActivityShareUrl(activityName);
+    const shareText = getShareText(activityName, details, formattedSchedule);
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(shareText);
+    let platformUrl = "";
+
+    if (platform === "x") {
+      platformUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+    } else if (platform === "facebook") {
+      platformUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+    } else if (platform === "whatsapp") {
+      platformUrl = `https://wa.me/?text=${encodeURIComponent(
+        `${shareText} ${shareUrl}`
+      )}`;
+    }
+
+    if (platformUrl) {
+      window.open(platformUrl, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  function initializeSharedActivityFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedActivity = urlParams.get("activity");
+
+    if (sharedActivity) {
+      searchQuery = sharedActivity;
+      searchInput.value = sharedActivity;
+    }
+  }
+
   // Function to determine activity type (this would ideally come from backend)
   function getActivityType(activityName, description) {
     const name = activityName.toLowerCase();
@@ -519,6 +582,24 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
+    const shareButtons = `
+      <div class="share-actions">
+        <span class="share-label">Share:</span>
+        <button class="share-button share-copy" data-activity="${name}" type="button">
+          Copy Link
+        </button>
+        <button class="share-button share-platform" data-platform="whatsapp" data-activity="${name}" type="button">
+          WhatsApp
+        </button>
+        <button class="share-button share-platform" data-platform="x" data-activity="${name}" type="button">
+          X
+        </button>
+        <button class="share-button share-platform" data-platform="facebook" data-activity="${name}" type="button">
+          Facebook
+        </button>
+      </div>
+    `;
+
     activityCard.innerHTML = `
       ${tagHtml}
       <h4>${name}</h4>
@@ -569,6 +650,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      ${shareButtons}
     `;
 
     // Add click handlers for delete buttons
@@ -586,6 +668,28 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     }
+
+    const copyLinkButton = activityCard.querySelector(".share-copy");
+    copyLinkButton.addEventListener("click", async () => {
+      try {
+        await copyTextToClipboard(buildActivityShareUrl(name));
+        showMessage(`Share link copied for ${name}.`, "success");
+      } catch (error) {
+        showMessage("Unable to copy link. Please copy it manually.", "error");
+      }
+    });
+
+    const platformShareButtons = activityCard.querySelectorAll(".share-platform");
+    platformShareButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        shareToPlatform(
+          button.dataset.platform,
+          name,
+          details,
+          formattedSchedule
+        );
+      });
+    });
 
     activitiesList.appendChild(activityCard);
   }
@@ -864,5 +968,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize app
   checkAuthentication();
   initializeFilters();
+  initializeSharedActivityFromUrl();
   fetchActivities();
 });
