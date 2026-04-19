@@ -331,7 +331,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.removeChild(textArea);
 
     if (!copied) {
-      throw new Error("Copy command failed");
+      throw new Error(
+        "Failed to copy to clipboard. Please copy the link manually."
+      );
     }
   }
 
@@ -673,7 +675,7 @@ document.addEventListener("DOMContentLoaded", () => {
     copyLinkButton.addEventListener("click", async () => {
       try {
         await copyTextToClipboard(buildActivityShareUrl(name));
-        showMessage(`Share link copied for ${name}.`, "success");
+        showMessage("Share link copied!", "success");
       } catch (error) {
         showMessage("Unable to copy link. Please copy it manually.", "error");
       }
