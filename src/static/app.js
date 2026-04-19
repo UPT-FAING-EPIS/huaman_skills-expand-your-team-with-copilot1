@@ -313,7 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getShareText(activityName, details, formattedSchedule) {
-    return `Check out ${activityName} at Mergington High School: ${details.description} Schedule: ${formattedSchedule}`;
+    return `Check out ${activityName} at Mergington High School: ${details.description}. Schedule: ${formattedSchedule}`;
   }
 
   async function copyTextToClipboard(text) {
@@ -355,11 +355,12 @@ document.addEventListener("DOMContentLoaded", () => {
       platformUrl = `https://wa.me/?text=${encodeURIComponent(
         `${shareText} ${shareUrl}`
       )}`;
+    } else {
+      console.warn(`Unsupported share platform: ${platform}`);
+      return;
     }
 
-    if (platformUrl) {
-      window.open(platformUrl, "_blank", "noopener,noreferrer");
-    }
+    window.open(platformUrl, "_blank", "noopener,noreferrer");
   }
 
   function initializeSharedActivityFromUrl() {
