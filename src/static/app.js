@@ -305,7 +305,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildActivityShareUrl(activityName) {
-    const shareUrl = new URL("/static/index.html", window.location.origin);
+    const shareUrl = new URL(window.location.href);
+    shareUrl.search = "";
+    shareUrl.hash = "";
     shareUrl.searchParams.set("activity", activityName);
     return shareUrl.toString();
   }
@@ -327,6 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
+    // Fallback for older browsers or non-HTTPS contexts where Clipboard API is unavailable.
     const copied = document.execCommand("copy");
     document.body.removeChild(textArea);
 
@@ -345,7 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let platformUrl = "";
 
     if (platform === "x") {
-      platformUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+      platformUrl = `https://x.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
     } else if (platform === "facebook") {
       platformUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
     } else if (platform === "whatsapp") {
