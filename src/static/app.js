@@ -377,7 +377,18 @@ document.addEventListener("DOMContentLoaded", () => {
       advanced: "Advanced",
     };
 
-    return difficultyLabels[normalizedDifficulty] || difficulty;
+    if (difficultyLabels[normalizedDifficulty]) {
+      return difficultyLabels[normalizedDifficulty];
+    }
+
+    const trimmedDifficulty = difficulty.trim();
+    if (!trimmedDifficulty) {
+      return "";
+    }
+
+    return (
+      trimmedDifficulty.charAt(0).toUpperCase() + trimmedDifficulty.slice(1)
+    );
   }
 
   // Function to fetch activities from API with optional day and time filters
@@ -456,7 +467,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Apply difficulty filter
       const activityDifficulty = (details.difficulty || "").toLowerCase();
-      if (currentDifficulty === "all-levels") {
+      if (currentDifficulty === "all-unspecified") {
         if (activityDifficulty) {
           return;
         }
