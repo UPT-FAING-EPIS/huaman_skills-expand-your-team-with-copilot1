@@ -361,9 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (platform === "facebook") {
       platformUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
     } else if (platform === "whatsapp") {
-      platformUrl = `https://wa.me/?text=${encodeURIComponent(
-        `${shareText} ${shareUrl}`
-      )}`;
+      platformUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
     } else {
       console.warn(`Unsupported share platform: ${platform}`);
       return;
@@ -691,7 +689,8 @@ document.addEventListener("DOMContentLoaded", () => {
           await copyTextToClipboard(buildActivityShareUrl(name));
           showMessage("Share link copied!", "success");
         } catch (error) {
-          showMessage("Unable to copy link. Please copy it manually.", "error");
+          const manualLink = buildActivityShareUrl(name);
+          showMessage(`Unable to copy link. Please copy manually: ${manualLink}`, "error");
         }
       });
     }
