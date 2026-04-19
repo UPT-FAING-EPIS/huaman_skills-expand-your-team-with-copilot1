@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Authentication state
   let currentUser = null;
   const themeStorageKey = "preferredTheme";
+  const defaultTheme = "light";
 
   // Time range mappings for the dropdown
   const timeRanges = {
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize theme from localStorage
   function initializeTheme() {
     const savedTheme = localStorage.getItem(themeStorageKey);
-    applyTheme(savedTheme === "dark" ? "dark" : "light");
+    applyTheme(savedTheme === "dark" ? "dark" : defaultTheme);
   }
 
   // Initialize filters from active elements
