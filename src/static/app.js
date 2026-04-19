@@ -313,7 +313,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getShareText(activityName, details, formattedSchedule) {
-    return `Check out ${activityName} at Mergington High School: ${details.description}. Schedule: ${formattedSchedule}`;
+    const normalizedDescription = String(details.description || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 140);
+    const normalizedSchedule = String(formattedSchedule || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80);
+    return `Check out ${activityName} at Mergington High School: ${normalizedDescription}. Schedule: ${normalizedSchedule}`;
   }
 
   async function copyTextToClipboard(text) {
@@ -324,8 +332,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const textArea = document.createElement("textarea");
     textArea.value = text;
+    // Keep off-screen while still selectable for document.execCommand fallback.
     textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
+    textArea.style.left = "-9999px";
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
@@ -676,15 +685,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const copyLinkButton = activityCard.querySelector(".share-copy");
-    copyLinkButton.addEventListener("click", async () => {
-      try {
-        await copyTextToClipboard(buildActivityShareUrl(name));
-        showMessage("Share link copied!", "success");
-      } catch (error) {
-        showMessage("Unable to copy link. Please copy it manually.", "error");
-      }
-    });
+    if (copyLinkButton) {
+      copyLinkButton.addEventListener("click", async () => {
+        try {
+          await copyTextToClipboard(buildActivityShareUrl(name));
+          showMessage("Share link copied!", "success");
+        } catch (error) {
+          showMessage("Unable to copy link. Please copy it manually.", "error");
+        }
+      });
+    }
 
+    // If no share platform buttons exist, this safely performs no action.
     const platformShareButtons = activityCard.querySelectorAll(".share-platform");
     platformShareButtons.forEach((button) => {
       button.addEventListener("click", () => {
